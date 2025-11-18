@@ -9,8 +9,6 @@ const isProduction = process.env.APP_STAGE === 'production';
 const isDevelopment = process.env.APP_STAGE === 'development';
 const isTest = process.env.APP_STAGE === 'test';
 
-console.log(process.env.APP_STAGE);
-
 // Load .env files based on environment
 if (isDevelopment) {
   config(); // Loads .env
@@ -20,6 +18,10 @@ if (isDevelopment) {
 
 // Define validation schema with Zod
 const envSchema = z.object({
+  APP_STAGE: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
+
   // Node environment
   NODE_ENV: z
     .enum(['development', 'production', 'test'])

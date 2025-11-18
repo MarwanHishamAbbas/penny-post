@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { corsOptions } from './config/cors';
 import { env } from './config/env';
+import router from './routes/v1/index.route';
+import logger from './lib/winston';
 
 const app = express();
 app.use(express.json());
@@ -15,7 +17,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
 
 (async () => {
+  app.use('/api/v1', router);
   app.listen(env.PORT, () => {
-    console.log(`Server started on http://localhost:${env.PORT}`);
+    logger.info(`Server Running on Port http://localhost:${env.PORT}`);
   });
 })();
