@@ -1,3 +1,73 @@
+Remove the --rm flag and add a volume
+bashdocker run -e POSTGRES_PASSWORD=lol \
+ --name=pg \
+ -d \
+ -p 5432:5432 \
+ -v pg_data:/var/lib/postgresql/data \
+ postgres:14
+Changes made:
+
+Removed --rm: Container persists even after stopping
+Added -v pg_data:/var/lib/postgresql/data: Creates a named volume that persists data
+
+Better approach: Use Docker Compose
+I recommend using Docker Compose for better management. Create a docker-compose.yml file:
+
+```yml
+yamlversion: '3.8'
+
+services:
+postgres:
+image: postgres:14
+container_name: pg
+environment:
+POSTGRES_PASSWORD: lol
+POSTGRES_USER: postgres
+POSTGRES_DB: myapp
+ports: - "5432:5432"
+volumes: - pg_data:/var/lib/postgresql/data
+restart: unless-stopped
+
+volumes:
+pg_data:
+Then use these commands:
+```
+
+```bash
+# Start the database
+docker-compose up -d
+
+# Stop (data persists)
+
+docker-compose stop
+
+# Start again
+
+docker-compose start
+
+# View logs
+
+docker-compose logs -f
+
+# Access psql
+
+docker-compose exec postgres psql -U postgres
+
+# Remove everything (including data)
+
+docker-compose down -v
+```
+
+Benefits of this approach:
+
+Data persists across container restarts
+Container persists until explicitly removed
+restart: unless-stopped means it auto-starts when Docker Desktop launches
+Easy to manage and version control
+Can add more services (Redis, etc.) easily
+
+The data will now survive Docker Desktop restarts and will only be deleted if you explicitly run docker-compose down -v or docker volume rm pg_data.
+
 # PennyPost - Modern Blog Platform
 
 ![PennyPost Logo](https://via.placeholder.com/150x150?text=PennyPost)

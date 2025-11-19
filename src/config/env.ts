@@ -32,18 +32,23 @@ const envSchema = z.object({
   HOST: z.string().default('localhost'),
 
   // Database
-  DATABASE_URL: z.string().startsWith('postgresql://'),
-  DATABASE_POOL_MIN: z.coerce.number().min(0).default(2),
-  DATABASE_POOL_MAX: z.coerce.number().positive().default(10),
+  POSTGRES_HOST: z.string(),
+  POSTGRES_USER: z.string(),
+  POSTGRES_PASSWORD: z.string(),
+  POSTGRES_DB: z.string(),
+  POSTGRES_PORT: z.string(),
+  // DATABASE_URL: z.string().startsWith('postgresql://'),
+  // DATABASE_POOL_MIN: z.coerce.number().min(0).default(2),
+  // DATABASE_POOL_MAX: z.coerce.number().positive().default(10),
 
   // JWT & Authentication
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_EXPIRES_IN: z.string().default('7d'),
-  REFRESH_TOKEN_SECRET: z.string().min(32).optional(),
-  REFRESH_TOKEN_EXPIRES_IN: z.string().default('30d'),
+  // JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  // JWT_EXPIRES_IN: z.string().default('7d'),
+  // REFRESH_TOKEN_SECRET: z.string().min(32).optional(),
+  // REFRESH_TOKEN_EXPIRES_IN: z.string().default('30d'),
 
   // Security
-  BCRYPT_ROUNDS: z.coerce.number().min(10).max(20).default(12),
+  // BCRYPT_ROUNDS: z.coerce.number().min(10).max(20).default(12),
 
   // CORS configuration
   CORS_ORIGIN: z
