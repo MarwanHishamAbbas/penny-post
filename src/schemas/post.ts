@@ -16,7 +16,7 @@ export const createPostSchema = z.object(
     content: z
       .string()
       .min(5, { message: 'Content must be at least 5 characters long' }),
-    author: z.string({ error: 'Author is required' }),
+    author_id: z.number().int().positive(),
   },
   { error: 'Body is required' },
 );

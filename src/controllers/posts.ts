@@ -10,7 +10,6 @@ import {
   updatePostSchema,
 } from '@/schemas/post';
 import { Request, Response } from 'express';
-import { STATUS_CODES } from 'http';
 
 export const getAllPosts = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -23,13 +22,25 @@ export const getAllPosts = asyncHandler(
     let params: any[] = [parseInt(page) * 5, limit, `%${status}%`];
 
     if (search) {
-      whereClause = `title ILIKE $2 AND`;
+      whereClause = `title ILIKE $4 AND`;
       params.push(`%${search}%`);
     }
 
+    logger.debug(
+      `SELECT p.*, a.name, COUNT(*) OVER()::INTEGER as total_count 
+       FROM posts p
+       INNER JOIN authors a
+       ON p.author_id = a.id
+       WHERE ${whereClause} status LIKE $3
+       OFFSET $1
+       LIMIT $2`,
+      params,
+    );
     const { rows } = await pool.query(
-      `SELECT *, COUNT(*) OVER()::INTEGER as total_count 
-       FROM posts 
+      `SELECT p.*, a.name, COUNT(*) OVER()::INTEGER as total_count 
+       FROM posts p
+       INNER JOIN authors a
+       ON p.author_id = a.id
        WHERE ${whereClause} status LIKE $3
        OFFSET $1
        LIMIT $2`,
@@ -50,9 +61,11 @@ export const getPostById = asyncHandler(
     const { id } = getPostParamsSchema.parse(req.params);
     const { rows } = await pool.query(
       `
-      SELECT *
-      FROM posts
-      WHERE id = $1
+      SELECT p.*, a.name
+      FROM posts p
+      INNER JOIN authors a
+      ON p.author_id = a.id
+      WHERE p.id = $1
       `,
       [id],
     );
@@ -68,18 +81,18 @@ export const getPostById = asyncHandler(
 
 export const createPost = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { author, content, title } = createPostSchema.parse(req.body);
+    const { author_id, content, title } = createPostSchema.parse(req.body);
 
     const { rows: createdPost } = await pool.query(
       `
         INSERT INTO posts (
-        title, content, author
+        title, content, author_id
         ) VALUES (
             $1, $2, $3 
         )
             RETURNING *
         `,
-      [title, content, author],
+      [title, content, author_id],
     );
     res
       .status(HttpStatus.CREATED)

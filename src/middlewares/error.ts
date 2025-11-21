@@ -1,48 +1,126 @@
+import { Request, Response, NextFunction } from 'express';
 import { env } from '@/config/env';
 import logger from '@/lib/winston';
-import type { Request, Response, NextFunction } from 'express';
+import { HttpStatus } from '@/lib/status-codes';
 
 export class AppError extends Error {
   statusCode: number;
+  code: string;
+  field?: string;
 
-  constructor(message: string, statusCode: number = 500) {
+  constructor(
+    message: string,
+    statusCode: number = 500,
+    code: string = 'ERROR',
+    field?: string,
+  ) {
     super(message);
     this.statusCode = statusCode;
+    this.code = code;
+    this.field = field;
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
+// Wrapper function that catches async errors
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>,
+) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+// Helper to extract field name from database error
+const extractFieldFromDetail = (detail: string): string | undefined => {
+  const match = detail?.match(/Key \((\w+)\)/);
+  return match ? match[1] : undefined;
+};
+
+// Global error handler middleware
 export const errorHandler = (
   err: any,
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
+  // Always log the full error for debugging
   logger.error('Error:', err);
 
-  // Default error
-  let statusCode = 500;
-  let message = 'Internal Server Error';
+  // Default error response
+  let statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR;
+  let message = 'Something went wrong, please try again later';
+  let code = 'INTERNAL_ERROR';
+  let field: string | undefined;
 
-  // Handle specific error types
-  if (err.statusCode) {
+  // Handle our custom AppError
+  if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
+    code = err.code;
+    field = err.field;
   }
 
-  // Database errors
-  if (err.code === '23505') {
-    statusCode = 409;
-    message = 'Duplicate entry';
+  // Handle PostgreSQL errors
+  else if (err.code === '23505') {
+    statusCode = HttpStatus.CONFLICT;
+    code = 'DUPLICATE_ENTRY';
+    field = extractFieldFromDetail(err.detail);
+    message = field
+      ? `This ${field} already exists`
+      : 'This record already exists';
+  } else if (err.code === '23503') {
+    statusCode = HttpStatus.BAD_REQUEST;
+    code = 'INVALID_REFERENCE';
+    field = extractFieldFromDetail(err.detail);
+    message = field
+      ? `The selected ${field.replace('_id', '')} does not exist`
+      : 'Referenced record does not exist';
+  } else if (err.code === '23502') {
+    statusCode = HttpStatus.BAD_REQUEST;
+    code = 'MISSING_FIELD';
+    field = err.column;
+    message = field ? `${field} is required` : 'A required field is missing';
   }
 
-  if (err.code === '23503') {
-    statusCode = 400;
-    message = 'Referenced record not found';
-  }
-
-  res.status(statusCode).json({
+  // Build the response
+  const response: Record<string, any> = {
     message,
-    ...(env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
+    code,
+  };
+
+  // Only include field if it exists
+  if (field) {
+    response.field = field;
+  }
+
+  // Only include stack trace in development
+  if (env.NODE_ENV === 'development') {
+    response.stack = err.stack;
+  }
+
+  res.status(statusCode).json(response);
 };
+
+// ===== Example Responses =====
+//
+// Foreign key error (author_id = 10 doesn't exist):
+// {
+//   "message": "The selected author does not exist",
+//   "code": "INVALID_REFERENCE",
+//   "field": "author_id"
+// }
+//
+// Duplicate entry (email already exists):
+// {
+//   "message": "This email already exists",
+//   "code": "DUPLICATE_ENTRY",
+//   "field": "email"
+// }
+//
+// Custom AppError:
+// throw new AppError('Post not found', HttpStatus.NOT_FOUND, 'NOT_FOUND');
+// {
+//   "message": "Post not found",
+//   "code": "NOT_FOUND"
+// }
