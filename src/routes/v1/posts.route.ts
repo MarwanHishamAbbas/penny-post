@@ -1,7 +1,7 @@
 import {
   createPost,
   deletePost,
-  generateSearchIndex,
+  searchPosts,
   getAllPosts,
   getPostById,
   updatePost,
@@ -17,9 +17,17 @@ import { Router } from 'express';
 
 const router = Router();
 
-router.get('/', validate(postQuerySchema, 'query'), getAllPosts);
+router.get(
+  '/',
+  validate(postQuerySchema.omit({ search: true }), 'query'),
+  getAllPosts,
+);
 
-router.get('/search', generateSearchIndex);
+router.get(
+  '/search',
+  validate(postQuerySchema.pick({ search: true }), 'query'),
+  searchPosts,
+);
 
 router.get('/:id', validate(getPostParamsSchema, 'params'), getPostById);
 

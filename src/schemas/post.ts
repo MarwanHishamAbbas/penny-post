@@ -1,9 +1,8 @@
 import z from 'zod';
 
 export const postQuerySchema = z.object({
-  search: z.string().optional(),
+  search: z.string(),
   status: z.enum(['published', 'draft']).default('published'),
-  tag: z.string().optional(),
   cursor: z.string().optional(),
 });
 
@@ -22,7 +21,6 @@ export const createPostSchema = z.object(
       .string()
       .min(5, { message: 'Content must be at least 5 characters long' }),
     author_id: z.number().int().positive(),
-    tags: z.array(z.number().int().positive()).optional(),
   },
   { error: 'Body is required' },
 );
