@@ -1,5 +1,6 @@
 import { pool } from '@/lib/database';
 import { HttpStatus } from '@/lib/status-codes';
+import { decodeCursor, encodeCursor } from '@/lib/utils';
 import logger from '@/lib/winston';
 import { asyncHandler } from '@/middlewares/async-handler';
 import { AppError } from '@/middlewares/error';
@@ -10,45 +11,85 @@ import {
   updatePostSchema,
 } from '@/schemas/post';
 import { Request, Response } from 'express';
-
 export const getAllPosts = asyncHandler(
-  // TODO, add Cursor based pagination
   async (req: Request, res: Response): Promise<void> => {
-    let { search, status, tag } = postQuerySchema.parse(req.query);
+    const { search, status, tag, cursor } = postQuerySchema.parse(req.query);
 
-    let whereConditions: string[] = [`status LIKE $1`];
+    const limit = 9;
+    const cursorData = cursor ? decodeCursor(cursor) : null;
+
+    if (cursor && !cursorData) {
+      throw new AppError('Invalid cursor', HttpStatus.BAD_REQUEST);
+    }
+
+    let whereConditions: string[] = [`p.status LIKE $1`];
     let params: any[] = [`%${status}%`];
+
+    if (cursorData) {
+      params.push(cursorData.created_at, cursorData.id);
+      whereConditions.push(
+        `(p.created_at, p.id) < ($${params.length - 1}, $${params.length})`,
+      );
+    }
 
     if (search) {
       params.push(`%${search}%`);
-      whereConditions.push(`title ILIKE $${params.length}`);
+      whereConditions.push(`p.title ILIKE $${params.length}`);
     }
 
     if (tag) {
       params.push(tag);
-      whereConditions.push(`t.name = $${params.length}`);
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM posts_tags pt
+        JOIN tags t ON pt.tag_id = t.id
+        WHERE pt.post_id = p.id AND t.name = $${params.length}
+      )`);
     }
 
     const whereClause = whereConditions.join(' AND ');
 
     const { rows } = await pool.query(
-      `SELECT p.id, p.status, p.created_at, p.title, p.content, c.name as category, a.name as author_name, array_agg(t.name) as tags, COUNT(*) OVER()::INTEGER as total_count
-       FROM posts p
-       INNER JOIN authors a ON p.author_id = a.id
-       LEFT JOIN posts_tags pt ON p.id = pt.post_id
-       LEFT JOIN tags t ON pt.tag_id = t.id
-       LEFT JOIN categories c ON p.category_id = c.id
-       WHERE ${whereClause}
-       GROUP BY p.id, a.name, c.name
-       LIMIT 5
-       `,
-      params,
+      `SELECT 
+    p.id, 
+    p.status, 
+    p.created_at AT TIME ZONE 'UTC' as created_at,
+    p.updated_at AT TIME ZONE 'UTC' as updated_at,
+    p.title, 
+    p.content, 
+    c.name as category, 
+    a.name as author_name,
+    (
+      SELECT COALESCE(array_agg(t.name), '{}')
+      FROM posts_tags pt
+      LEFT JOIN tags t ON pt.tag_id = t.id
+      WHERE pt.post_id = p.id
+    ) as tags
+   FROM posts p
+   INNER JOIN authors a ON p.author_id = a.id
+   LEFT JOIN categories c ON p.category_id = c.id
+   WHERE ${whereClause}
+   ORDER BY p.created_at DESC, p.id DESC
+   LIMIT $${params.length + 1}`,
+      [...params, limit + 1],
     );
 
+    const hasMore = rows.length > limit;
+    const posts = hasMore ? rows.slice(0, limit) : rows;
+
+    const nextCursor =
+      hasMore && posts.length > 0
+        ? encodeCursor({
+            created_at: new Date(
+              posts[posts.length - 1].created_at,
+            ).toISOString(),
+            id: posts[posts.length - 1].id,
+          })
+        : null;
+
     res.status(HttpStatus.OK).json({
-      total: rows.length > 0 ? rows[0].total_count : 0,
-      rows: rows.map(({ total_count, ...post }) => post),
-      limit: 5,
+      posts,
+      nextCursor,
+      hasMore,
     });
   },
 );

@@ -1,10 +1,10 @@
 import z from 'zod';
 
 export const postQuerySchema = z.object({
-  page: z.string().optional(),
   search: z.string().optional(),
   status: z.enum(['published', 'draft']).default('published'),
   tag: z.string().optional(),
+  cursor: z.string().optional(),
 });
 
 export const getPostParamsSchema = z.object({
