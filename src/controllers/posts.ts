@@ -1,4 +1,6 @@
 import { pool } from '@/lib/database';
+import fs from 'fs';
+import path from 'path';
 import { HttpStatus } from '@/lib/status-codes';
 import { decodeCursor, encodeCursor } from '@/lib/utils';
 import logger from '@/lib/winston';
@@ -211,5 +213,31 @@ export const deletePost = asyncHandler(
     res
       .status(HttpStatus.ACCEPTED)
       .json({ message: 'Post has been deleted', post: deletedPost[0] });
+  },
+);
+
+export const generateSearchIndex = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { rows } = await pool.query(`
+     SELECT 
+      p.id,
+      p.title,
+      a.name as author_name
+    FROM posts p
+    INNER JOIN authors a ON p.author_id = a.id
+    WHERE p.title <> '' AND p.status = 'published'
+    GROUP BY p.id, a.name
+  `);
+
+    const searchIndex = rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      author: row.author_name,
+      url: `/posts/${row.id}`,
+    }));
+
+    res
+      .status(HttpStatus.ACCEPTED)
+      .json({ message: 'Search Index Created', posts: searchIndex });
   },
 );
