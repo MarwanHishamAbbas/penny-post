@@ -13,6 +13,7 @@ import {
   updatePostSchema,
 } from '@/schemas/post';
 import { Request, Response } from 'express';
+
 export const getAllPosts = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const { status, cursor } = postQuerySchema
