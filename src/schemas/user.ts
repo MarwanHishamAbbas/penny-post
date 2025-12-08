@@ -10,3 +10,7 @@ export const registerUserSchema = z.object(
   },
   { error: "User's body is required" },
 );
+
+export const validateEmailSchema = z.object({
+  token: z.string('Verification Token is required'),
+});

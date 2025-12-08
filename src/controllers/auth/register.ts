@@ -5,20 +5,7 @@ import bcrypt from 'bcrypt';
 import { pool } from '@/lib/database';
 import logger from '@/lib/winston';
 import { HttpStatus } from '@/lib/status-codes';
-
-// User Registration (email & password)
-
-//  1. User submits: email, password, name
-// 2. Backend validates:
-//    - Email not already used
-//    - Password meets requirements (min 8 chars, etc.)
-// 3. Hash password with bcrypt (12 rounds)
-// 4. Transaction:
-//    - INSERT INTO users (email, name, email_verified=false)
-//    - INSERT INTO accounts (user_id, provider='credentials', password_hash)
-// 5. Generate email verification token
-// 6. Send verification email
-// 7. Return 201 Created (don't auto-login until verified)
+import { generateToken, getExpirationDate, hashToken } from '@/lib/token';
 
 export const registerUser = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -37,7 +24,7 @@ export const registerUser = asyncHandler(
 
       if (existingUser.rows.length > 0) {
         res.status(HttpStatus.CONFLICT).json({
-          message: 'Email already registered',
+          message: 'Email already exists',
         });
         return;
       }
@@ -45,12 +32,14 @@ export const registerUser = asyncHandler(
       // Insert user
       const { rows } = await client.query(
         `
-        INSERT INTO users (email, name, email_verifed)
-        VALUES ($1, $2, true)
+        INSERT INTO users (email, name, email_verified)
+        VALUES ($1, $2, false)
         RETURNING id, name
         `,
         [email, name],
       );
+
+      const registeredUser = rows[0];
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -61,17 +50,28 @@ export const registerUser = asyncHandler(
         INSERT INTO accounts (user_id, provider, password_hash)
         VALUES ($1, $2, $3)
         `,
-        [rows[0].id, 'credentials', hashedPassword],
+        [registeredUser.id, 'credentials', hashedPassword],
       );
 
-      await client.query('COMMIT');
-
       // Generate verification token (you need to implement this)
-      // const verificationToken = generateVerificationToken();
-      // await sendVerificationEmail(email, verificationToken);
+      const verificationToken = generateToken();
+      const tokenHash = await hashToken(verificationToken);
+      const expiresAt = getExpirationDate();
+
+      // Store verification token
+      await client.query(
+        `
+        INSERT INTO verification_tokens (user_id, token_hash, expires_at)
+        VALUES ($1, $2, $3)
+        `,
+        [registeredUser.id, tokenHash, expiresAt],
+      );
+      await client.query('COMMIT');
+      const verificationUrl = `http://localhost:3001/api/v1/auth/verify-email?token=${verificationToken}`;
 
       res.status(HttpStatus.CREATED).json({
-        message: `${rows[0].name} created successfully. Please check your email to verify your account.`,
+        message: `${registeredUser.name} created successfully. Please check your email to verify your account.`,
+        verificationUrl,
       });
     } catch (error) {
       await client.query('ROLLBACK').catch((rollbackError) => {
