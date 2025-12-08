@@ -14,6 +14,7 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(compression({ threshold: 1024 }));
 app.use(express.urlencoded({ extended: true }));
+
 app.use(cors(corsOptions));
 
 (async () => {

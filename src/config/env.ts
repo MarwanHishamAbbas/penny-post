@@ -41,6 +41,13 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string(),
   ACCESS_TOKEN_EXPIRY: z.string().default('1h'),
   REFRESH_TOKEN_EXPIRY: z.string().default('1w'),
+
+  // Email SMTP
+  SMTP_HOST: z.string(),
+  SMTP_PORT: z.string(),
+  SMTP_USER: z.string(),
+  SMTP_PASS: z.string(),
+  SMTP_FROM: z.string(),
   // DATABASE_URL: z.string().startsWith('postgresql://'),
   // DATABASE_POOL_MIN: z.coerce.number().min(0).default(2),
   // DATABASE_POOL_MAX: z.coerce.number().positive().default(10),

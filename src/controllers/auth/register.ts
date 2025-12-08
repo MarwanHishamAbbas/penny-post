@@ -6,6 +6,7 @@ import { pool } from '@/lib/database';
 import logger from '@/lib/winston';
 import { HttpStatus } from '@/lib/status-codes';
 import { generateToken, getExpirationDate, hashToken } from '@/lib/token';
+import { sendVerificationEmail } from '@/lib/email';
 
 export const registerUser = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -67,11 +68,27 @@ export const registerUser = asyncHandler(
         [registeredUser.id, tokenHash, expiresAt],
       );
       await client.query('COMMIT');
-      const verificationUrl = `http://localhost:3001/api/v1/auth/verify-email?token=${verificationToken}`;
+
+      const verificationUrl = `http://localhost:3001/api/v1/auth/verify-email`;
+      const emailSent = await sendVerificationEmail(
+        email,
+        name,
+        verificationToken,
+        verificationUrl,
+      );
+      if (!emailSent) {
+        logger.warn(`Verification email failed to send for user: ${email}`);
+      }
 
       res.status(HttpStatus.CREATED).json({
         message: `${registeredUser.name} created successfully. Please check your email to verify your account.`,
-        verificationUrl,
+        data: {
+          user_id: registeredUser.id,
+          name: registeredUser.name,
+          email,
+          emailVerified: false,
+          verificationEmailSent: emailSent,
+        },
       });
     } catch (error) {
       await client.query('ROLLBACK').catch((rollbackError) => {

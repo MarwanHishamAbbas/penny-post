@@ -16,8 +16,8 @@ export const verifyEmail = asyncHandler(
 
     try {
       await client.query('BEGIN');
-      // Find a token not expired & not used
 
+      // Find a token not expired & not used
       const { rows: tokenResults } = await client.query(
         `
         SELECT vt.id, vt.token_hash, vt.user_id, u.email
