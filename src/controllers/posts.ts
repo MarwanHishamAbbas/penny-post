@@ -48,9 +48,7 @@ export const getAllPosts = asyncHandler(
     p.title, 
     p.content, 
     c.name as category, 
-    a.name as author_name
    FROM posts p
-   INNER JOIN authors a ON p.author_id = a.id
    LEFT JOIN categories c ON p.category_id = c.id
    WHERE ${whereClause} AND p.title <> ''
    ORDER BY p.created_at DESC, p.id DESC
@@ -89,14 +87,12 @@ export const searchPosts = asyncHandler(
     const { rows } = await pool.query(
       `SELECT 
         p.id,
-        p.title,
-        a.name as author_name
+        p.title
       FROM posts p
-      INNER JOIN authors a ON p.author_id = a.id
       WHERE p.title <> '' 
         AND p.status = 'published' 
         AND p.title ILIKE $1
-      GROUP BY p.id, a.name
+      GROUP BY p.id
       LIMIT 10`,
       [`%${search}%`], // ✅ CORRECT - No quotes!
     );
@@ -116,13 +112,11 @@ export const getPostById = asyncHandler(
     const { id } = getPostParamsSchema.parse(req.params);
     const { rows } = await pool.query(
       `
-      SELECT p.*, a.name as author_name
+      SELECT p.*
       FROM posts p
-      INNER JOIN authors a
-      ON p.author_id = a.id
       LEFT JOIN posts_tags pt ON p.id = pt.post_id
       WHERE p.id = $1
-      GROUP BY p.id, a.name
+      GROUP BY p.id
       `,
       [id],
     );

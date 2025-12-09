@@ -8,7 +8,7 @@ const router = Router();
 
 router.use('/stats', statsRouter);
 router.use('/auth', authRouter);
-router.use('/posts', postsRouter);
+// router.use('/posts', postsRouter);
 
 router.use(errorHandler);
 

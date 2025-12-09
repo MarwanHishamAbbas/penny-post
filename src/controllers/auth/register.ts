@@ -69,7 +69,7 @@ export const registerUser = asyncHandler(
       );
       await client.query('COMMIT');
 
-      const verificationUrl = `http://localhost:3001/api/v1/auth/verify-email`;
+      const verificationUrl = `http://localhost:3001/verify-email`;
       const emailSent = await sendVerificationEmail(
         email,
         name,
