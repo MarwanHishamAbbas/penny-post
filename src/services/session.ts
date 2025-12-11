@@ -90,7 +90,7 @@ export class SessionService {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'strict' : 'lax',
-      path: '/api/auth/refresh', // Only accessible to refresh endpoint
+      path: '/',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       expires: refreshExpiresAt,
       ...(isProduction && { domain: process.env.COOKIE_DOMAIN }),

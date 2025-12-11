@@ -31,7 +31,7 @@ router.post(
 
 router.post(
   '/refresh',
-  validate(refreshSchema, 'body'),
+  // validate(refreshSchema, 'body'),
   refreshRateLimiter,
   refreshToken,
 );

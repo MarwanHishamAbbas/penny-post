@@ -137,12 +137,9 @@ export class TokenService {
     ipAddress: string,
     userAgent: string,
   ): Promise<TokenPair> {
-    const refreshTokenHash = await this.hashToken(refreshToken);
     const client = await pool.connect();
 
     try {
-      await client.query('BEGIN');
-
       // Find refresh token
       const tokenResult = await client.query(
         `
@@ -154,7 +151,7 @@ export class TokenService {
           AND u.email_verified = true
         FOR UPDATE
         `,
-        [refreshTokenHash],
+        [refreshToken],
       );
 
       if (tokenResult.rows.length === 0) {
@@ -184,8 +181,6 @@ export class TokenService {
         ipAddress,
         userAgent,
       );
-
-      await client.query('COMMIT');
 
       return newTokenPair;
     } catch (error) {

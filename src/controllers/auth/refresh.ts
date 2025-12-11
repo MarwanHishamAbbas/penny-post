@@ -10,7 +10,7 @@ import { TokenService } from '@/services/token';
 export const refreshToken = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     // Get refresh token from cookie or body
-    const refreshToken = req.cookies?.refresh_token || req.body.refresh_token;
+    const refreshToken = req.cookies?.refresh_token;
 
     if (!refreshToken) {
       SessionService.clearAuthCookies(res);
@@ -26,6 +26,7 @@ export const refreshToken = asyncHandler(
 
     try {
       // Attempt to refresh session
+
       const tokenPair = await TokenService.refreshSession(
         refreshToken,
         ipAddress,
