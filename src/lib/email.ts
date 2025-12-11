@@ -86,13 +86,6 @@ export async function sendVerificationEmail(
             </a>
           </div>
           
-          <p>Or copy and paste this link into your browser:</p>
-          <p style="background: #eee; padding: 10px; border-radius: 5px; word-break: break-all;">
-            <a href="${verificationLink}" style="color: #667eea; text-decoration: none;">
-              ${verificationLink}
-            </a>
-          </p>
-          
           <p>This verification link will expire in <strong>24 hours</strong>.</p>
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">

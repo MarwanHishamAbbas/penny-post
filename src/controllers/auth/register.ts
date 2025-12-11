@@ -7,6 +7,7 @@ import logger from '@/lib/winston';
 import { HttpStatus } from '@/lib/status-codes';
 import { generateToken, getExpirationDate, hashToken } from '@/lib/token';
 import { sendVerificationEmail } from '@/lib/email';
+import { env } from '@/config/env';
 
 export const registerUser = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -69,7 +70,7 @@ export const registerUser = asyncHandler(
       );
       await client.query('COMMIT');
 
-      const verificationUrl = `http://localhost:3001/verify-email`;
+      const verificationUrl = `${env.FRONTEND_URL}/verify-email`;
       const emailSent = await sendVerificationEmail(
         email,
         name,

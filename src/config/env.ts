@@ -22,6 +22,8 @@ const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
 
+  FRONTEND_URL: z.string().startsWith('http'),
+
   // Node environment
   NODE_ENV: z
     .enum(['development', 'production', 'test'])

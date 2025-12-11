@@ -65,15 +65,12 @@ export const verifyEmail = asyncHandler(
 
       await client.query('COMMIT');
 
-      const redirectUrl = `http://localhost:3000/auth/verification-success`;
-
       res.status(HttpStatus.OK).json({
         message: 'Email verified successfully!',
         data: {
           userId: validToken.user_id,
           email: validToken.email,
           name: validToken.name,
-          redirectUrl,
         },
       });
     } catch (error) {
