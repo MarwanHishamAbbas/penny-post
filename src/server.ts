@@ -15,7 +15,14 @@ app.use(helmet());
 app.use(compression({ threshold: 1024 }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({ ...corsOptions, credentials: true }));
+app.use(
+  cors({
+    ...corsOptions,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 
 (async () => {
   app.use('/api/v1', router);

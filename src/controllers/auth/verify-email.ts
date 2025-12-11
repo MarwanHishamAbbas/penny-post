@@ -1,6 +1,7 @@
 import { pool } from '@/lib/database';
 import { HttpStatus } from '@/lib/status-codes';
-import { verifyToken } from '@/lib/token';
+import { TokenService } from '@/services/token';
+
 import logger from '@/lib/winston';
 import { asyncHandler } from '@/middlewares/async-handler';
 import { validateEmailSchema } from '@/schemas/user';
@@ -31,7 +32,10 @@ export const verifyEmail = asyncHandler(
 
       let validToken = null;
       for (const tokenRecord of tokenResults) {
-        const isValidToken = await verifyToken(token, tokenRecord.token_hash);
+        const isValidToken = await TokenService.verifyToken(
+          token,
+          tokenRecord.token_hash,
+        );
         if (isValidToken) {
           validToken = tokenRecord;
           break;

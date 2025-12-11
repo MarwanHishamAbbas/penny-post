@@ -85,3 +85,45 @@ System Actions:
 8. If ALL checks pass → Mark token as used
 9. Update user: email_verified = true
 10. Delete other tokens for this user (cleanup)
+
+## LOGIN FLOW (Step-by-Step)
+
+### Phase 1: User Login Request
+
+User → Frontend → Backend
+
+1. User enters email/password
+2. Frontend POSTs to /api/auth/login
+3. Backend validates credentials
+
+### Phase 2: Backend Verification
+
+Backend verifies:
+
+1. ✅ Email exists in database
+2. ✅ Email is verified (email_verified = true)
+3. ✅ Password matches (bcrypt.compare)
+4. ✅ Account is not locked/suspended
+
+### Phase 3: Session Creation
+
+On successful verification: 5. Generate Session Token (64 chars, 15 min expiry) 6. Generate Refresh Token (64 chars, 30 days expiry) 7. Store both in database with:
+
+- User ID
+- IP Address
+- User Agent
+- Expiry timestamps
+
+### Phase 4: Response to Frontend
+
+Backend sets cookies:
+
+8. session_token (HttpOnly, Secure, 15 min)
+9. refresh_token (HttpOnly, Secure, 30 days)
+   (Only accessible via /api/auth/refresh)
+
+Response body:
+{
+"user": { id, email, name, avatar_url },
+"session": { expires_at }
+}

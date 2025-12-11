@@ -5,9 +5,10 @@ import bcrypt from 'bcrypt';
 import { pool } from '@/lib/database';
 import logger from '@/lib/winston';
 import { HttpStatus } from '@/lib/status-codes';
-import { generateToken, getExpirationDate, hashToken } from '@/lib/token';
+
 import { sendVerificationEmail } from '@/lib/email';
 import { env } from '@/config/env';
+import { TokenService } from '@/services/token';
 
 export const registerUser = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -56,9 +57,9 @@ export const registerUser = asyncHandler(
       );
 
       // Generate verification token (you need to implement this)
-      const verificationToken = generateToken();
-      const tokenHash = await hashToken(verificationToken);
-      const expiresAt = getExpirationDate();
+      const verificationToken = TokenService.generateToken();
+      const tokenHash = await TokenService.hashToken(verificationToken);
+      const expiresAt = TokenService.generateExpirationDates().refreshExpiresAt;
 
       // Store verification token
       await client.query(

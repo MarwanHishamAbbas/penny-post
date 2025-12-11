@@ -14,3 +14,23 @@ export const registerUserSchema = z.object(
 export const validateEmailSchema = z.object({
   token: z.string('Verification Token is required'),
 });
+
+export const loginSchema = z.object(
+  {
+    email: z.email('Invalid email address'),
+    password: z.string().min(1, 'Password is required'),
+  },
+  { error: "User's body is required" },
+);
+
+export const refreshSchema = z.object({
+  refresh_token: z.string().optional(),
+});
+
+export const logoutSchema = z.object({
+  logout_all: z.boolean().optional().default(false),
+});
+
+export const revokeSessionSchema = z.object({
+  session_id: z.string().uuid('Invalid session ID'),
+});
