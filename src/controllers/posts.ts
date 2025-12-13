@@ -44,12 +44,16 @@ export const getAllPosts = asyncHandler(
     p.id, 
     p.status, 
     p.created_at AT TIME ZONE 'UTC' as created_at,
+    p.overview,
+    p.cover_url,
+    u.name as author_name,
     p.updated_at AT TIME ZONE 'UTC' as updated_at,
     p.title, 
     p.content, 
-    c.name as category, 
+    c.name as category
    FROM posts p
    LEFT JOIN categories c ON p.category_id = c.id
+   INNER JOIN users u ON p.author_id = u.id
    WHERE ${whereClause} AND p.title <> ''
    ORDER BY p.created_at DESC, p.id DESC
    LIMIT $${params.length + 1}`,
@@ -87,12 +91,14 @@ export const searchPosts = asyncHandler(
     const { rows } = await pool.query(
       `SELECT 
         p.id,
-        p.title
+        p.title,
+        u.name as author_name
       FROM posts p
+      INNER JOIN users u ON p.author_id = u.id
       WHERE p.title <> '' 
         AND p.status = 'published' 
         AND p.title ILIKE $1
-      GROUP BY p.id
+      GROUP BY p.id, u.id
       LIMIT 10`,
       [`%${search}%`], // ✅ CORRECT - No quotes!
     );

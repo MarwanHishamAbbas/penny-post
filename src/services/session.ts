@@ -109,7 +109,7 @@ export class SessionService {
     });
 
     res.clearCookie('refresh_token', {
-      path: '/api/auth/refresh',
+      path: '/',
       ...(isProduction && { domain: process.env.COOKIE_DOMAIN }),
     });
   }
