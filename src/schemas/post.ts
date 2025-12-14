@@ -4,6 +4,7 @@ export const postQuerySchema = z.object({
   search: z.string(),
   status: z.enum(['published', 'draft']).default('published'),
   cursor: z.string().optional(),
+  is_featured: z.string().optional().default('false'),
 });
 
 export const getPostParamsSchema = z.object({

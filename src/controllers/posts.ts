@@ -1,6 +1,5 @@
 import { pool } from '@/lib/database';
-import fs from 'fs';
-import path from 'path';
+
 import { HttpStatus } from '@/lib/status-codes';
 import { decodeCursor, encodeCursor } from '@/lib/utils';
 import logger from '@/lib/winston';
@@ -16,19 +15,19 @@ import { Request, Response } from 'express';
 
 export const getAllPosts = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { status, cursor } = postQuerySchema
+    const { status, cursor, is_featured } = postQuerySchema
       .omit({ search: true })
       .parse(req.query);
 
-    const limit = 9;
+    const limit = is_featured === 'true' ? 1 : 9;
     const cursorData = cursor ? decodeCursor(cursor) : null;
 
     if (cursor && !cursorData) {
       throw new AppError('Invalid cursor', HttpStatus.BAD_REQUEST);
     }
 
-    let whereConditions: string[] = [`p.status = $1`];
-    let params: any[] = [status];
+    let whereConditions: string[] = [`p.status = $1`, 'p.is_featured = $2'];
+    let params: any[] = [status, is_featured];
 
     if (cursorData) {
       params.push(cursorData.created_at, cursorData.id);
